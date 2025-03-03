@@ -1,8 +1,8 @@
 import app/routes/roll
-import app/web
+import app/web.{type Context}
 import wisp.{type Request, type Response}
 
-pub fn handle_request(req: Request) -> Response {
+pub fn handle_request(req: Request, _: Context) -> Response {
   use req <- web.middleware(req)
 
   case wisp.path_segments(req) {

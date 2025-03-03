@@ -1,21 +1,33 @@
 import app/router
+import app/web
+import dotenv_gleam
+import envoy
 import gleam/erlang/process
+import gleam/result
 import mist
+import pog
 import wisp
 import wisp/wisp_mist
 
 pub fn main() {
+  // read .env file in dev
+  dotenv_gleam.config()
+
   // This sets the logger to print INFO level logs, and other sensible defaults
   // for a web application.
   wisp.configure_logger()
 
-  // Here we generate a secret key, but in a real application you would want to
-  // load this from somewhere so that it is not regenerated on every restart.
-  let secret_key_base = wisp.random_string(64)
+  let assert Ok(db) = read_connection_uri()
+  let context = web.Context(db: db)
+  let assert Ok(secret_key) = envoy.get("SECRET_KEY")
+
+  // The handle_request function is partially applied with the context to make
+  // the request handler function that only takes a request.
+  let handler = router.handle_request(_, context)
 
   // Start the Mist web server.
   let assert Ok(_) =
-    wisp_mist.handler(router.handle_request, secret_key_base)
+    wisp_mist.handler(handler, secret_key)
     |> mist.new
     |> mist.port(8000)
     |> mist.start_http
@@ -23,4 +35,10 @@ pub fn main() {
   // The web server runs in new Erlang process, so put this one to sleep while
   // it works concurrently.
   process.sleep_forever()
+}
+
+fn read_connection_uri() -> Result(pog.Connection, Nil) {
+  use database_url <- result.try(envoy.get("DATABASE_URL"))
+  use config <- result.try(pog.url_config(database_url))
+  Ok(pog.connect(config))
 }
