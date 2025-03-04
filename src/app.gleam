@@ -1,6 +1,5 @@
 import app/router
 import app/web
-import dotenv_gleam
 import envoy
 import gleam/erlang/process
 import gleam/result
@@ -10,16 +9,13 @@ import wisp
 import wisp/wisp_mist
 
 pub fn main() {
-  // read .env file in dev
-  dotenv_gleam.config()
-
   // This sets the logger to print INFO level logs, and other sensible defaults
   // for a web application.
   wisp.configure_logger()
 
   let assert Ok(db) = read_connection_uri()
-  let context = web.Context(db: db)
   let assert Ok(secret_key) = envoy.get("SECRET_KEY")
+  let context = web.Context(db: db, secret: secret_key)
 
   // The handle_request function is partially applied with the context to make
   // the request handler function that only takes a request.

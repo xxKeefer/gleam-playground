@@ -9,7 +9,7 @@ import wisp
 // tests for mock implementations), configuration, and so on.
 //
 pub type Context {
-  Context(db: pog.Connection)
+  Context(db: pog.Connection, secret: String)
 }
 
 /// The middleware stack that the request handler uses. The stack is itself a
