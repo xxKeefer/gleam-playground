@@ -1,6 +1,7 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -8,6 +9,13 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+-- *not* creating schema, since initdb creates it
+
 
 --
 -- Name: update_updated_at(); Type: FUNCTION; Schema: public; Owner: -
@@ -28,21 +36,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: browser_sessions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.browser_sessions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    session_token text NOT NULL,
-    ip_address inet,
-    user_agent text,
-    created_at timestamp without time zone DEFAULT now(),
-    expires_at timestamp without time zone NOT NULL
-);
-
-
---
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -52,11 +45,24 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sessions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    session_token text NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    expires_at timestamp without time zone NOT NULL
+);
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.users (
-    user_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     email text NOT NULL,
     password_hash text NOT NULL,
     created_at timestamp without time zone NOT NULL,
@@ -66,18 +72,18 @@ CREATE TABLE public.users (
 
 
 --
--- Name: browser_sessions browser_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: sessions browser_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.browser_sessions
+ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT browser_sessions_pkey PRIMARY KEY (id);
 
 
 --
--- Name: browser_sessions browser_sessions_session_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: sessions browser_sessions_session_token_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.browser_sessions
+ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT browser_sessions_session_token_key UNIQUE (session_token);
 
 
@@ -102,21 +108,21 @@ ALTER TABLE ONLY public.users
 --
 
 ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
 
 --
--- Name: idx_browser_sessions_session_token; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_sessions_session_token; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_browser_sessions_session_token ON public.browser_sessions USING btree (session_token);
+CREATE INDEX idx_sessions_session_token ON public.sessions USING btree (session_token);
 
 
 --
--- Name: idx_browser_sessions_user_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_sessions_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_browser_sessions_user_id ON public.browser_sessions USING btree (user_id);
+CREATE INDEX idx_sessions_user_id ON public.sessions USING btree (user_id);
 
 
 --
@@ -127,11 +133,11 @@ CREATE TRIGGER users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECU
 
 
 --
--- Name: browser_sessions browser_sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.browser_sessions
-    ADD CONSTRAINT browser_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
@@ -144,4 +150,6 @@ ALTER TABLE ONLY public.browser_sessions
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20250303141353');
+    ('20250303141353'),
+    ('20250304063724'),
+    ('20250304064916');

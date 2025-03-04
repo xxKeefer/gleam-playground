@@ -54,7 +54,7 @@ pub fn create(req: Request, ctx: Context) -> Response {
         Ok(pog.Returned(_, [created])) -> {
           let object =
             json.object([
-              #("user_id", json.string(uuid.to_string(created.user_id))),
+              #("id", json.string(uuid.to_string(created.id))),
               #("email", json.string(created.email)),
             ])
 
@@ -74,7 +74,7 @@ pub fn create(req: Request, ctx: Context) -> Response {
 
 fn list_to_json(user: sql.ListUsersRow) {
   json.object([
-    #("user_id", json.string(uuid.to_string(user.user_id))),
+    #("id", json.string(uuid.to_string(user.id))),
     #("email", json.string(user.email)),
   ])
 }
@@ -93,9 +93,9 @@ pub fn list(req: Request, ctx: Context) -> Response {
   }
 }
 
-fn read_to_json(user: sql.ReadUserRow) {
+fn read_to_json(user: sql.ReadUserByIdRow) {
   json.object([
-    #("user_id", json.string(uuid.to_string(user.user_id))),
+    #("id", json.string(uuid.to_string(user.id))),
     #("email", json.string(user.email)),
   ])
 }
@@ -105,8 +105,8 @@ pub fn read(req: Request, ctx: Context, id: String) -> Response {
   use <- wisp.require_method(req, Get)
 
   case uuid.from_string(id) {
-    Ok(user_id) -> {
-      case sql.read_user(ctx.db, user_id) {
+    Ok(id) -> {
+      case sql.read_user_by_id(ctx.db, id) {
         Ok(pog.Returned(_, [user])) -> {
           let object = read_to_json(user)
           let payload = json.to_string_tree(object)

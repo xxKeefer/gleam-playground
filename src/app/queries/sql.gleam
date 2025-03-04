@@ -9,7 +9,7 @@ import youid/uuid.{type Uuid}
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type CreateUserRow {
-  CreateUserRow(user_id: Uuid, email: String)
+  CreateUserRow(id: Uuid, email: String)
 }
 
 /// Runs the `create_user` query
@@ -20,12 +20,12 @@ pub type CreateUserRow {
 ///
 pub fn create_user(db, arg_1, arg_2) {
   let decoder = {
-    use user_id <- decode.field(0, uuid_decoder())
+    use id <- decode.field(0, uuid_decoder())
     use email <- decode.field(1, decode.string)
-    decode.success(CreateUserRow(user_id:, email:))
+    decode.success(CreateUserRow(id:, email:))
   }
 
-  "insert into users (user_id, email, password_hash, created_at, updated_at)
+  "insert into users (id, email, password_hash, created_at, updated_at)
 values (
   gen_random_uuid(), 
   $1, 
@@ -33,7 +33,7 @@ values (
   now() at time zone 'utc', 
   now() at time zone 'utc'
 )
-returning user_id, email;"
+returning id, email;"
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
   |> pog.parameter(pog.text(arg_2))
@@ -41,34 +41,66 @@ returning user_id, email;"
   |> pog.execute(db)
 }
 
-/// A row you get from running the `read_user` query
-/// defined in `./src/app/queries/sql/read_user.sql`.
+/// A row you get from running the `read_user_by_id` query
+/// defined in `./src/app/queries/sql/read_user_by_id.sql`.
 ///
 /// > 🐿️ This type definition was generated automatically using v3.0.1 of the
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub type ReadUserRow {
-  ReadUserRow(user_id: Uuid, email: String)
+pub type ReadUserByIdRow {
+  ReadUserByIdRow(id: Uuid, email: String)
 }
 
-/// Runs the `read_user` query
-/// defined in `./src/app/queries/sql/read_user.sql`.
+/// Runs the `read_user_by_id` query
+/// defined in `./src/app/queries/sql/read_user_by_id.sql`.
 ///
 /// > 🐿️ This function was generated automatically using v3.0.1 of
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
-pub fn read_user(db, arg_1) {
+pub fn read_user_by_id(db, arg_1) {
   let decoder = {
-    use user_id <- decode.field(0, uuid_decoder())
+    use id <- decode.field(0, uuid_decoder())
     use email <- decode.field(1, decode.string)
-    decode.success(ReadUserRow(user_id:, email:))
+    decode.success(ReadUserByIdRow(id:, email:))
   }
 
-  "select user_id, email from users
-where user_id = $1;
+  "select id, email from users
+where id = $1;
 "
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `read_user_by_email` query
+/// defined in `./src/app/queries/sql/read_user_by_email.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.1 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type ReadUserByEmailRow {
+  ReadUserByEmailRow(id: Uuid, email: String)
+}
+
+/// Runs the `read_user_by_email` query
+/// defined in `./src/app/queries/sql/read_user_by_email.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.1 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn read_user_by_email(db, arg_1) {
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use email <- decode.field(1, decode.string)
+    decode.success(ReadUserByEmailRow(id:, email:))
+  }
+
+  "select id, email from users
+where email = $1;
+"
+  |> pog.query
+  |> pog.parameter(pog.text(arg_1))
   |> pog.returning(decoder)
   |> pog.execute(db)
 }
@@ -80,7 +112,7 @@ where user_id = $1;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type ListUsersRow {
-  ListUsersRow(user_id: Uuid, email: String)
+  ListUsersRow(id: Uuid, email: String)
 }
 
 /// Runs the `list_users` query
@@ -91,12 +123,12 @@ pub type ListUsersRow {
 ///
 pub fn list_users(db) {
   let decoder = {
-    use user_id <- decode.field(0, uuid_decoder())
+    use id <- decode.field(0, uuid_decoder())
     use email <- decode.field(1, decode.string)
-    decode.success(ListUsersRow(user_id:, email:))
+    decode.success(ListUsersRow(id:, email:))
   }
 
-  "select user_id, email from users;
+  "select id, email from users;
 "
   |> pog.query
   |> pog.returning(decoder)

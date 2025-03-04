@@ -1,1 +1,1 @@
-select user_id, email from users;
+select id, email from users;
