@@ -61,7 +61,7 @@ fn roll_dice(params: RollRequest) -> RollResult {
     list.sort(results, int.compare)
     |> order_dice(params.boost)
     |> list.take(2)
-  let total = list.fold(kept, 0, int.add) |> int.add(params.modifier)
+  let total = int.sum(kept) + params.modifier
 
   RollResult(total, params.modifier, kept, results)
 }
