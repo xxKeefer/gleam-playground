@@ -41,6 +41,71 @@ returning id, email;"
   |> pog.execute(db)
 }
 
+/// Runs the `delete_session` query
+/// defined in `./src/app/queries/sql/delete_session.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.1 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn delete_session(db, arg_1, arg_2) {
+  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+
+  "delete from sessions
+where user_id = $1
+  and session_token = $2
+"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.text(arg_2))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
+/// A row you get from running the `create_session` query
+/// defined in `./src/app/queries/sql/create_session.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.1 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type CreateSessionRow {
+  CreateSessionRow(
+    user_id: Uuid,
+    session_token: String,
+    expires_at: pog.Timestamp,
+  )
+}
+
+/// Runs the `create_session` query
+/// defined in `./src/app/queries/sql/create_session.sql`.
+///
+/// > 🐿️ This function was generated automatically using v3.0.1 of
+/// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub fn create_session(db, arg_1, arg_2, arg_3) {
+  let decoder = {
+    use user_id <- decode.field(0, uuid_decoder())
+    use session_token <- decode.field(1, decode.string)
+    use expires_at <- decode.field(2, pog.timestamp_decoder())
+    decode.success(CreateSessionRow(user_id:, session_token:, expires_at:))
+  }
+
+  "insert into sessions (id, user_id, session_token, created_at, expires_at)
+values (
+  gen_random_uuid(), 
+  $1, 
+  $2, 
+  now() at time zone 'utc', 
+  $3
+)
+returning user_id, session_token, expires_at;"
+  |> pog.query
+  |> pog.parameter(pog.text(uuid.to_string(arg_1)))
+  |> pog.parameter(pog.text(arg_2))
+  |> pog.parameter(pog.timestamp(arg_3))
+  |> pog.returning(decoder)
+  |> pog.execute(db)
+}
+
 /// A row you get from running the `read_user_by_id` query
 /// defined in `./src/app/queries/sql/read_user_by_id.sql`.
 ///
@@ -48,7 +113,7 @@ returning id, email;"
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type ReadUserByIdRow {
-  ReadUserByIdRow(id: Uuid, email: String)
+  ReadUserByIdRow(id: Uuid, email: String, password_hash: String)
 }
 
 /// Runs the `read_user_by_id` query
@@ -61,10 +126,11 @@ pub fn read_user_by_id(db, arg_1) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use email <- decode.field(1, decode.string)
-    decode.success(ReadUserByIdRow(id:, email:))
+    use password_hash <- decode.field(2, decode.string)
+    decode.success(ReadUserByIdRow(id:, email:, password_hash:))
   }
 
-  "select id, email from users
+  "select id, email, password_hash from users
 where id = $1;
 "
   |> pog.query
@@ -80,7 +146,7 @@ where id = $1;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type ReadUserByEmailRow {
-  ReadUserByEmailRow(id: Uuid, email: String)
+  ReadUserByEmailRow(id: Uuid, email: String, password_hash: String)
 }
 
 /// Runs the `read_user_by_email` query
@@ -93,10 +159,11 @@ pub fn read_user_by_email(db, arg_1) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
     use email <- decode.field(1, decode.string)
-    decode.success(ReadUserByEmailRow(id:, email:))
+    use password_hash <- decode.field(2, decode.string)
+    decode.success(ReadUserByEmailRow(id:, email:, password_hash:))
   }
 
-  "select id, email from users
+  "select id, email, password_hash from users
 where email = $1;
 "
   |> pog.query
