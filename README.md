@@ -1,24 +1,15 @@
 # omen_roller
 
-[![Package Version](https://img.shields.io/hexpm/v/omen_roller)](https://hex.pm/packages/omen_roller)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/omen_roller/)
-
-```sh
-gleam add omen_roller@1
-```
-```gleam
-import omen_roller
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
-```
-
-Further documentation can be found at <https://hexdocs.pm/omen_roller>.
+Just a silly little app to learn about backend dev
 
 ## Development
 
+### Prerequisites
+1. have postgres v17 or later running locally
+1. install [dbmate](https://github.com/amacneil/dbmate?tab=readme-ov-file#installation) and run `dbmate up`
+1. at the root of the project, create a .env file with your dev secrets. an example can be found in `./.env.example`
+
 ```sh
+source ./dotenv.sh # loads env variables from .env file
 gleam run   # Run the project
-gleam test  # Run the tests
 ```
