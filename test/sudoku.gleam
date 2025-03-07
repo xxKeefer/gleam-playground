@@ -1,11 +1,6 @@
 import app/controllers/sudoku
 import gleam/list
-import gleeunit
 import gleeunit/should
-
-pub fn main() {
-  gleeunit.main()
-}
 
 pub fn blank_zero_test() {
   sudoku.blank()

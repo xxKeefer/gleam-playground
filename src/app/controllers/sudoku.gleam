@@ -3,6 +3,10 @@ import gleam/list
 import gleam/result
 import gleam/string
 
+// is my best attempt to follow along with the first four lessons Graham Hutton's 
+// Advanced Functional Programming in Haskell and converting the Haskell taught there into Gleam.
+// see: https://www.youtube.com/playlist?list=PLF1Z-APd9zK5uFc8FKr_di9bfsYv8-lbc) 
+
 // ---[ Types ]--------------------------------------------------------
 type Input =
   Int
