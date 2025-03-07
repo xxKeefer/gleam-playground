@@ -13,3 +13,6 @@ Just a silly little app to learn about backend dev
 source ./dotenv.sh # loads env variables from .env file
 gleam run   # Run the project
 ```
+
+### Sudoku stuff
+`src/app/routes/sudoku.gleam` is my best attempt to follow along with the first four lessons Graham Hutton's [Advanced Functional Programming in Haskell](https://www.youtube.com/playlist?list=PLF1Z-APd9zK5uFc8FKr_di9bfsYv8-lbc) and converting the Haskell taught there into Gleam.
