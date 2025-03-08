@@ -143,7 +143,7 @@ fn read_to_json(user: sql.ReadUserByIdRow) {
 
 pub fn read_user(user_id: String, ctx: web.Context) -> Response {
   uuid.from_string(user_id)
-  |> result.map_error(fn(_) { InvalidUuid })
+  |> result.replace_error(InvalidUuid)
   |> result.then(fn(id) {
     case sql.read_user_by_id(ctx.db, id) {
       Ok(pog.Returned(_, [user])) -> {
@@ -243,11 +243,10 @@ fn delete_session(
   |> result.map_error(fn(err) { DatabaseError(err) })
 }
 
-fn logout_response() -> Result(Response, UserError) {
+fn logout_response() -> Response {
   json.object([#("message", json.string("Logged out"))])
   |> json.to_string_tree
   |> wisp.json_response(200)
-  |> Ok
 }
 
 pub fn logout_user(
@@ -263,7 +262,7 @@ pub fn logout_user(
     Ok(session) -> {
       logout_request_decoder(json)
       |> result.then(delete_session(_, session, ctx))
-      |> result.then(fn(_) { logout_response() })
+      |> result.replace(logout_response())
     }
   }
   |> send
