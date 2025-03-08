@@ -57,10 +57,10 @@ fn email_credentials_decoder(
 fn register_user(
   user: EmailCredentials,
   ctx: web.Context,
-) -> Result(sql.CreateUserRow, UserError) {
+) -> Result(sql.UserCreateRow, UserError) {
   let bits = bit_array.from_string(user.password)
   let hashed = antigone.hash(antigone.hasher(), bits)
-  case sql.create_user(ctx.db, user.email, hashed) {
+  case sql.user_create(ctx.db, user.email, hashed) {
     Ok(pog.Returned(_, [created])) -> Ok(created)
     Error(err) -> Error(DatabaseError(err))
     _ -> Error(UnknownError)
@@ -68,7 +68,7 @@ fn register_user(
 }
 
 fn create_response(
-  user: sql.CreateUserRow,
+  user: sql.UserCreateRow,
   req: Request,
   ctx: Context,
 ) -> Result(Response, UserError) {
@@ -108,7 +108,7 @@ fn create_session(
   user: uuid.Uuid,
 ) -> Result(Response, UserError) {
   let NewSessionReq(user, id, expiry, expires_in) = new_session(user)
-  case sql.create_session(ctx.db, user, id, expiry) {
+  case sql.user_session_create(ctx.db, user, id, expiry) {
     Ok(pog.Returned(_, [created])) ->
       Ok(wisp.set_cookie(
         res,
@@ -134,7 +134,7 @@ fn new_session(user: uuid.Uuid) -> NewSessionReq {
   NewSessionReq(user, id: session_id, expiry: stamp, expires_in: expires_in)
 }
 
-fn read_to_json(user: sql.ReadUserByIdRow) {
+fn read_to_json(user: sql.UserByIdRow) {
   json.object([
     #("id", json.string(uuid.to_string(user.id))),
     #("email", json.string(user.email)),
@@ -145,7 +145,7 @@ pub fn read_user(user_id: String, ctx: web.Context) -> Response {
   uuid.from_string(user_id)
   |> result.replace_error(InvalidUuid)
   |> result.then(fn(id) {
-    case sql.read_user_by_id(ctx.db, id) {
+    case sql.user_by_id(ctx.db, id) {
       Ok(pog.Returned(_, [user])) -> {
         let object = read_to_json(user)
         let payload = json.to_string_tree(object)
@@ -158,7 +158,7 @@ pub fn read_user(user_id: String, ctx: web.Context) -> Response {
   |> send
 }
 
-fn list_to_json(user: sql.ListUsersRow) {
+fn list_to_json(user: sql.UserListRow) {
   json.object([
     #("id", json.string(uuid.to_string(user.id))),
     #("email", json.string(user.email)),
@@ -166,7 +166,7 @@ fn list_to_json(user: sql.ListUsersRow) {
 }
 
 pub fn list_user(ctx: Context) -> Response {
-  case sql.list_users(ctx.db) {
+  case sql.user_list(ctx.db) {
     Ok(pog.Returned(_, users)) -> {
       let object = json.array(users, list_to_json)
       let payload = json.to_string_tree(object)
@@ -180,8 +180,8 @@ pub fn list_user(ctx: Context) -> Response {
 fn authenticate_user(
   auth: EmailCredentials,
   ctx: web.Context,
-) -> Result(sql.ReadUserByEmailRow, UserError) {
-  case sql.read_user_by_email(ctx.db, auth.email) {
+) -> Result(sql.UserByEmailRow, UserError) {
+  case sql.user_by_email(ctx.db, auth.email) {
     Ok(pog.Returned(_, [user])) -> {
       let bits = bit_array.from_string(auth.password)
 
@@ -196,7 +196,7 @@ fn authenticate_user(
 }
 
 fn login_response(
-  user: sql.ReadUserByEmailRow,
+  user: sql.UserByEmailRow,
   req: Request,
   ctx: Context,
 ) -> Result(Response, UserError) {
@@ -239,7 +239,7 @@ fn delete_session(
   session: String,
   ctx: web.Context,
 ) -> Result(pog.Returned(Nil), UserError) {
-  sql.delete_session(ctx.db, user.user, session)
+  sql.user_session_delete(ctx.db, user.user, session)
   |> result.map_error(fn(err) { DatabaseError(err) })
 }
 
