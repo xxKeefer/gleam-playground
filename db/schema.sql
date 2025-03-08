@@ -74,19 +74,6 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: sessions; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.sessions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    session_token text NOT NULL,
-    created_at timestamp without time zone DEFAULT now(),
-    expires_at timestamp without time zone NOT NULL
-);
-
-
---
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -125,22 +112,6 @@ ALTER TABLE ONLY public.blog_articles
 
 
 --
--- Name: sessions browser_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sessions
-    ADD CONSTRAINT browser_sessions_pkey PRIMARY KEY (id);
-
-
---
--- Name: sessions browser_sessions_session_token_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sessions
-    ADD CONSTRAINT browser_sessions_session_token_key UNIQUE (session_token);
-
-
---
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -162,20 +133,6 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: idx_sessions_session_token; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sessions_session_token ON public.sessions USING btree (session_token);
-
-
---
--- Name: idx_sessions_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_sessions_user_id ON public.sessions USING btree (user_id);
 
 
 --
@@ -231,14 +188,6 @@ ALTER TABLE ONLY public.blog_articles
 
 
 --
--- Name: sessions sessions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.sessions
-    ADD CONSTRAINT sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- PostgreSQL database dump complete
 --
 
@@ -251,4 +200,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250303141353'),
     ('20250304063724'),
     ('20250304064916'),
-    ('20250308054254');
+    ('20250308054254'),
+    ('20250308142849');

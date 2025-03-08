@@ -11,7 +11,7 @@ pub fn handle_request(req: Request, ctx: Context) -> Response {
     ["roll"] -> roll.handle_roll_dice(req)
     ["user"] -> user.all(req, ctx)
     ["user", "login"] -> user.login(req, ctx)
-    ["user", "logout"] -> user.logout(req, ctx)
+    ["user", "logout"] -> user.logout(req)
     ["user", id] -> user.one(req, ctx, id)
     ["sudoku"] -> sudoku.handle_solve(req)
     _ -> wisp.not_found()

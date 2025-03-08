@@ -37,8 +37,7 @@ pub fn login(req: Request, ctx: Context) -> Response {
   controller.login_user(json, req, ctx)
 }
 
-pub fn logout(req: Request, ctx: Context) -> Response {
+pub fn logout(req: Request) -> Response {
   use <- wisp.require_method(req, Delete)
-  use json <- wisp.require_json(req)
-  controller.logout_user(json, req, ctx)
+  controller.logout_user(req)
 }
