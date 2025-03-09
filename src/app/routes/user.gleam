@@ -1,5 +1,5 @@
+import app/auth.{type Context}
 import app/controllers/user as controller
-import app/web.{type Context}
 import gleam/http.{Delete, Get, Post}
 import wisp.{type Request, type Response}
 
@@ -40,4 +40,11 @@ pub fn login(req: Request, ctx: Context) -> Response {
 pub fn logout(req: Request) -> Response {
   use <- wisp.require_method(req, Delete)
   controller.logout_user(req)
+}
+
+pub fn example_protected(req: Request, ctx: Context) -> Response {
+  use <- wisp.require_method(req, Get)
+  use claim <- auth.require_authentication(ctx)
+  wisp.response(200)
+  |> wisp.string_body("cool kids club member - " <> claim.email)
 }

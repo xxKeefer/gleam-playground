@@ -1,5 +1,5 @@
+import app/auth
 import app/router
-import app/web
 import envoy
 import gleam/erlang/process
 import gleam/result
@@ -13,7 +13,8 @@ pub fn main() {
 
   let assert Ok(db) = read_connection_uri()
   let assert Ok(secret_key) = envoy.get("SECRET_KEY")
-  let context = web.Context(db: db, secret: secret_key)
+
+  let context = auth.Unauthenticated(db: db, secret: secret_key)
 
   let handler = router.handle_request(_, context)
 

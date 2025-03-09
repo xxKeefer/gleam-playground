@@ -1,72 +1,110 @@
 import antigone
+import app/auth.{type Context, type UserClaim}
+import app/config.{config as app_config}
 import app/queries/sql
-import app/web.{type Context}
 import birl
 import gleam/bit_array
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/int
+import gleam/io
 import gleam/json
 import gleam/result
+import gleam/string
 import gwt
 import pog
 import wisp.{type Request, type Response}
 import youid/uuid
 
-pub type UserError {
+pub type UserRouteError {
   InvalidUuid
   UnprocessableEntity(List(decode.DecodeError))
   DatabaseError(pog.QueryError)
   UnknownError
   RejectedPassword
+  UserAlreadyExists
 }
 
 pub type EmailCredentials {
   EmailCredentials(email: String, password: String)
 }
 
-fn constraint_violated(msg: String, constraint: String, detail: String) {
-  json.object([
-    #("msg", json.string(msg)),
-    #("constraint", json.string(constraint)),
-    #("detail", json.string(detail)),
-  ])
-  |> json.to_string_tree
-  |> wisp.json_response(500)
+fn handle_errors(error: UserRouteError) -> Response {
+  case error {
+    UnknownError -> send_error(500, "something went wrong")
+    RejectedPassword | InvalidUuid -> send_error(401, "UNAUTHORIZED")
+    UserAlreadyExists -> send_error(409, "user with same email already exists")
+    DatabaseError(e) -> handle_db_error(e)
+    UnprocessableEntity(errs) -> {
+      io.debug(decoder_errors_to_json(errs))
+      wisp.bad_request()
+    }
+  }
 }
 
-fn pog_to_wisp(pog_error: pog.QueryError) -> Response {
-  //TODO: build response bodies from record fields
-  case pog_error {
+fn decoder_errors_to_json(errors: List(decode.DecodeError)) -> json.Json {
+  let of_errors = fn(e: decode.DecodeError) -> json.Json {
+    json.object([
+      #("expected", json.string(e.expected)),
+      #("found", json.string(e.found)),
+      #("path", json.array(e.path, of: json.string)),
+    ])
+  }
+
+  json.object([#("errors", json.array(errors, of_errors))])
+}
+
+fn send_error(code: Int, msg: String) -> Response {
+  wisp.response(code) |> wisp.string_body(msg)
+}
+
+fn handle_db_error(error: pog.QueryError) -> Response {
+  case error {
     pog.ConstraintViolated(msg, constraint, detail) ->
       constraint_violated(msg, constraint, detail)
-    pog.UnexpectedArgumentCount(_, _) -> wisp.bad_request()
-    pog.UnexpectedArgumentType(_, _) -> wisp.bad_request()
-    pog.UnexpectedResultType(_) -> wisp.bad_request()
+    pog.UnexpectedArgumentCount(_, _) -> handle_unexpected(error)
+    pog.UnexpectedArgumentType(_, _) -> handle_unexpected(error)
+    pog.UnexpectedResultType(_) -> handle_unexpected(error)
     _ -> wisp.internal_server_error()
   }
 }
 
-fn send(response: Result(Response, UserError)) -> Response {
+fn handle_unexpected(error: pog.QueryError) -> Response {
+  case error {
+    pog.UnexpectedArgumentCount(expected, got) ->
+      io.debug(
+        "UnexpectedArgumentCount: expected "
+        <> int.to_string(expected)
+        <> ", got "
+        <> int.to_string(got),
+      )
+    pog.UnexpectedArgumentType(expected, got) ->
+      io.debug(
+        "UnexpectedArgumentType: expected " <> expected <> ", got " <> got,
+      )
+    pog.UnexpectedResultType(_) -> io.debug("UnexpectedResultType")
+
+    _ -> io.debug("fn = handle_unexpected, should not be here")
+  }
+
+  wisp.bad_request()
+}
+
+fn constraint_violated(msg: String, constraint: String, detail: String) {
+  io.debug([msg, constraint, detail] |> string.join("\n"))
+  wisp.internal_server_error()
+}
+
+fn send(response: Result(Response, UserRouteError)) -> Response {
   case response {
     Ok(success) -> success
-    Error(DatabaseError(err)) -> pog_to_wisp(err)
-    wtf ->
-      case wtf {
-        Ok(_) -> {
-          wisp.log_debug("something borked real good")
-          wisp.response(419)
-        }
-        Error(_) -> {
-          wisp.log_debug("something borked")
-          wisp.internal_server_error()
-        }
-      }
+    Error(error) -> handle_errors(error)
   }
 }
 
 fn email_credentials_decoder(
   json: dynamic.Dynamic,
-) -> Result(EmailCredentials, UserError) {
+) -> Result(EmailCredentials, UserRouteError) {
   decode.run(json, {
     use email <- decode.field("email", decode.string)
     use password <- decode.field("password", decode.string)
@@ -78,21 +116,20 @@ fn email_credentials_decoder(
 
 fn register_user(
   user: EmailCredentials,
-  ctx: web.Context,
-) -> Result(UserFrom, UserError) {
+  ctx: Context,
+) -> Result(UserFrom, UserRouteError) {
   let bits = bit_array.from_string(user.password)
   let hashed = antigone.hash(antigone.hasher(), bits)
   case sql.user_create(ctx.db, user.email, hashed) {
     Ok(pog.Returned(_, [created])) -> Ok(Created(created))
+    Error(pog.ConstraintViolated(_, "users_email_key", _)) ->
+      Error(UserAlreadyExists)
     Error(err) -> Error(DatabaseError(err))
     _ -> Error(UnknownError)
   }
 }
 
-fn create_response(
-  payload: #(web.UserClaim, String, Int),
-  req: Request,
-) -> Response {
+fn create_response(payload: #(UserClaim, String, Int), req: Request) -> Response {
   let #(user, token, expires_in) = payload
 
   json.object([
@@ -108,7 +145,7 @@ fn create_response(
 pub fn create_user(
   json: dynamic.Dynamic,
   req: Request,
-  ctx: web.Context,
+  ctx: Context,
 ) -> Response {
   email_credentials_decoder(json)
   |> result.then(register_user(_, ctx))
@@ -124,7 +161,7 @@ fn read_to_json(user: sql.UserByIdRow) {
   ])
 }
 
-pub fn read_user(user_id: String, ctx: web.Context) -> Response {
+pub fn read_user(user_id: String, ctx: Context) -> Response {
   uuid.from_string(user_id)
   |> result.replace_error(InvalidUuid)
   |> result.then(fn(id) {
@@ -162,8 +199,8 @@ pub fn list_user(ctx: Context) -> Response {
 
 fn authenticate_user(
   auth: EmailCredentials,
-  ctx: web.Context,
-) -> Result(UserFrom, UserError) {
+  ctx: Context,
+) -> Result(UserFrom, UserRouteError) {
   case sql.user_by_email(ctx.db, auth.email) {
     Ok(pog.Returned(_, [user])) -> {
       let bits = bit_array.from_string(auth.password)
@@ -183,10 +220,10 @@ type UserFrom {
   LoggedIn(user: sql.UserByEmailRow)
 }
 
-fn mint_token(user: UserFrom, ctx: Context) -> #(web.UserClaim, String, Int) {
+fn mint_token(user: UserFrom, ctx: Context) -> #(UserClaim, String, Int) {
   let claim = case user {
-    Created(u) -> web.UserClaim(id: uuid.to_string(u.id), email: u.email)
-    LoggedIn(u) -> web.UserClaim(id: uuid.to_string(u.id), email: u.email)
+    Created(u) -> auth.UserClaim(id: uuid.to_string(u.id), email: u.email)
+    LoggedIn(u) -> auth.UserClaim(id: uuid.to_string(u.id), email: u.email)
   }
   let payload =
     json.object([
@@ -194,8 +231,7 @@ fn mint_token(user: UserFrom, ctx: Context) -> #(web.UserClaim, String, Int) {
       #("email", json.string(claim.email)),
     ])
   let iat = birl.to_unix(birl.now())
-  let in_30_days = 60 * 60 * 24 * 30
-  let exp = iat + in_30_days
+  let exp = iat + app_config.token_expiry
   let token =
     gwt.new()
     |> gwt.set_jwt_id(claim.id)
@@ -206,10 +242,7 @@ fn mint_token(user: UserFrom, ctx: Context) -> #(web.UserClaim, String, Int) {
   #(claim, token, exp)
 }
 
-fn login_response(
-  payload: #(web.UserClaim, String, Int),
-  req: Request,
-) -> Response {
+fn login_response(payload: #(UserClaim, String, Int), req: Request) -> Response {
   let #(user, token, expires_in) = payload
 
   json.object([#("user_id", json.string(user.id))])
@@ -219,11 +252,7 @@ fn login_response(
   |> wisp.set_header("Authorization", "Bearer " <> token)
 }
 
-pub fn login_user(
-  json: dynamic.Dynamic,
-  req: Request,
-  ctx: web.Context,
-) -> Response {
+pub fn login_user(json: dynamic.Dynamic, req: Request, ctx: Context) -> Response {
   email_credentials_decoder(json)
   |> result.then(authenticate_user(_, ctx))
   |> result.map(mint_token(_, ctx))
@@ -232,10 +261,11 @@ pub fn login_user(
 }
 
 pub fn logout_user(req: Request) -> Response {
-  case wisp.get_cookie(req, "s.id", wisp.Signed) {
+  case auth.collect_token(req) {
     Error(_) -> wisp.not_found()
-    Ok(session) ->
+    Ok(token) ->
       wisp.no_content()
-      |> wisp.set_cookie(req, "auth_token", session, wisp.Signed, 0)
+      |> wisp.set_cookie(req, "auth_token", token, wisp.Signed, 0)
+      |> wisp.set_header("Authorization", "")
   }
 }
