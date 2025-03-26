@@ -18,4 +18,4 @@ values (
   $4,
   $5
 )
-returning  id, title, slug, created_at;
+returning *;

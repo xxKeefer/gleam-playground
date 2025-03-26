@@ -1,4 +1,5 @@
 import gleam/dynamic/decode
+import gleam/option.{type Option}
 import pog
 import youid/uuid.{type Uuid}
 
@@ -35,6 +36,25 @@ where id = $1;
   |> pog.execute(db)
 }
 
+/// A row you get from running the `blog_update` query
+/// defined in `./src/app/queries/sql/blog_update.sql`.
+///
+/// > 🐿️ This type definition was generated automatically using v3.0.1 of the
+/// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
+///
+pub type BlogUpdateRow {
+  BlogUpdateRow(
+    id: Uuid,
+    title: String,
+    slug: String,
+    author_id: Uuid,
+    created_at: pog.Timestamp,
+    updated_at: pog.Timestamp,
+    tags: Option(List(String)),
+    content: String,
+  )
+}
+
 /// Runs the `blog_update` query
 /// defined in `./src/app/queries/sql/blog_update.sql`.
 ///
@@ -42,11 +62,33 @@ where id = $1;
 /// > the [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub fn blog_update(db, arg_1, arg_2, arg_3, arg_4, arg_5) {
-  let decoder = decode.map(decode.dynamic, fn(_) { Nil })
+  let decoder = {
+    use id <- decode.field(0, uuid_decoder())
+    use title <- decode.field(1, decode.string)
+    use slug <- decode.field(2, decode.string)
+    use author_id <- decode.field(3, uuid_decoder())
+    use created_at <- decode.field(4, pog.timestamp_decoder())
+    use updated_at <- decode.field(5, pog.timestamp_decoder())
+    use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
+    use content <- decode.field(7, decode.string)
+    decode.success(
+      BlogUpdateRow(
+        id:,
+        title:,
+        slug:,
+        author_id:,
+        created_at:,
+        updated_at:,
+        tags:,
+        content:,
+      ),
+    )
+  }
 
   "update blog_articles
 set content = $2, title = $3, slug = $4, tags = $5
-where id = $1;"
+where id = $1
+returning *;"
   |> pog.query
   |> pog.parameter(pog.text(uuid.to_string(arg_1)))
   |> pog.parameter(pog.text(arg_2))
@@ -64,7 +106,16 @@ where id = $1;"
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type BlogListRow {
-  BlogListRow(id: Uuid, title: String, slug: String, created_at: pog.Timestamp)
+  BlogListRow(
+    id: Uuid,
+    title: String,
+    slug: String,
+    author_id: Uuid,
+    created_at: pog.Timestamp,
+    updated_at: pog.Timestamp,
+    tags: Option(List(String)),
+    content: String,
+  )
 }
 
 /// Runs the `blog_list` query
@@ -78,11 +129,26 @@ pub fn blog_list(db) {
     use id <- decode.field(0, uuid_decoder())
     use title <- decode.field(1, decode.string)
     use slug <- decode.field(2, decode.string)
-    use created_at <- decode.field(3, pog.timestamp_decoder())
-    decode.success(BlogListRow(id:, title:, slug:, created_at:))
+    use author_id <- decode.field(3, uuid_decoder())
+    use created_at <- decode.field(4, pog.timestamp_decoder())
+    use updated_at <- decode.field(5, pog.timestamp_decoder())
+    use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
+    use content <- decode.field(7, decode.string)
+    decode.success(
+      BlogListRow(
+        id:,
+        title:,
+        slug:,
+        author_id:,
+        created_at:,
+        updated_at:,
+        tags:,
+        content:,
+      ),
+    )
   }
 
-  "select id, title, slug, created_at from blog_articles;
+  "select * from blog_articles;
 "
   |> pog.query
   |> pog.returning(decoder)
@@ -165,7 +231,16 @@ returning id, email;"
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type BlogByIdRow {
-  BlogByIdRow(id: Uuid, email: String, password_hash: String)
+  BlogByIdRow(
+    id: Uuid,
+    title: String,
+    slug: String,
+    author_id: Uuid,
+    created_at: pog.Timestamp,
+    updated_at: pog.Timestamp,
+    tags: Option(List(String)),
+    content: String,
+  )
 }
 
 /// Runs the `blog_by_id` query
@@ -177,12 +252,28 @@ pub type BlogByIdRow {
 pub fn blog_by_id(db, arg_1) {
   let decoder = {
     use id <- decode.field(0, uuid_decoder())
-    use email <- decode.field(1, decode.string)
-    use password_hash <- decode.field(2, decode.string)
-    decode.success(BlogByIdRow(id:, email:, password_hash:))
+    use title <- decode.field(1, decode.string)
+    use slug <- decode.field(2, decode.string)
+    use author_id <- decode.field(3, uuid_decoder())
+    use created_at <- decode.field(4, pog.timestamp_decoder())
+    use updated_at <- decode.field(5, pog.timestamp_decoder())
+    use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
+    use content <- decode.field(7, decode.string)
+    decode.success(
+      BlogByIdRow(
+        id:,
+        title:,
+        slug:,
+        author_id:,
+        created_at:,
+        updated_at:,
+        tags:,
+        content:,
+      ),
+    )
   }
 
-  "select id, email, password_hash from users
+  "select * from blog_articles
 where id = $1;
 "
   |> pog.query
@@ -198,7 +289,15 @@ where id = $1;
 /// > [squirrel package](https://github.com/giacomocavalieri/squirrel).
 ///
 pub type BlogCreateRow {
-  BlogCreateRow(id: Uuid, title: String, slug: String, created_at: pog.Timestamp,
+  BlogCreateRow(
+    id: Uuid,
+    title: String,
+    slug: String,
+    author_id: Uuid,
+    created_at: pog.Timestamp,
+    updated_at: pog.Timestamp,
+    tags: Option(List(String)),
+    content: String,
   )
 }
 
@@ -213,8 +312,23 @@ pub fn blog_create(db, arg_1, arg_2, arg_3, arg_4, arg_5) {
     use id <- decode.field(0, uuid_decoder())
     use title <- decode.field(1, decode.string)
     use slug <- decode.field(2, decode.string)
-    use created_at <- decode.field(3, pog.timestamp_decoder())
-    decode.success(BlogCreateRow(id:, title:, slug:, created_at:))
+    use author_id <- decode.field(3, uuid_decoder())
+    use created_at <- decode.field(4, pog.timestamp_decoder())
+    use updated_at <- decode.field(5, pog.timestamp_decoder())
+    use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
+    use content <- decode.field(7, decode.string)
+    decode.success(
+      BlogCreateRow(
+        id:,
+        title:,
+        slug:,
+        author_id:,
+        created_at:,
+        updated_at:,
+        tags:,
+        content:,
+      ),
+    )
   }
 
   "insert into blog_articles (
@@ -237,7 +351,7 @@ values (
   $4,
   $5
 )
-returning  id, title, slug, created_at;"
+returning *;"
   |> pog.query
   |> pog.parameter(pog.text(arg_1))
   |> pog.parameter(pog.text(arg_2))

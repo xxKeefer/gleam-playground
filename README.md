@@ -11,7 +11,7 @@ Just a silly little app to learn about backend dev and gleam in general
 
 ```sh
 source ./dotenv.sh # loads env variables from .env file
-gleam run   # Run the project
+gleam run -m app   # Run the project
 ```
 
 ### Sudoku stuff

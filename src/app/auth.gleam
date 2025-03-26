@@ -1,5 +1,6 @@
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/json
 import gleam/list
 import gleam/pair
 import gleam/result
@@ -7,6 +8,7 @@ import gleam/string
 import gwt
 import pog
 import wisp.{type Request, type Response}
+import youid/uuid
 
 pub type Context {
   Unauthenticated(db: pog.Connection, secret: String)
@@ -14,7 +16,7 @@ pub type Context {
 }
 
 pub type UserClaim {
-  UserClaim(id: String, email: String)
+  UserClaim(id: uuid.Uuid, email: String)
 }
 
 pub fn middleware(
@@ -74,8 +76,20 @@ fn user_claim_decoder(
   json: dynamic.Dynamic,
 ) -> Result(UserClaim, List(decode.DecodeError)) {
   decode.run(json, {
-    use id <- decode.field("id", decode.string)
+    use id <- decode.field("id", uuid_decoder())
     use email <- decode.field("email", decode.string)
     decode.success(UserClaim(id, email))
   })
+}
+
+pub fn uuid_decoder() {
+  use str <- decode.then(decode.string)
+  case uuid.from_string(str) {
+    Ok(uuid) -> decode.success(uuid)
+    Error(_) -> decode.failure(uuid.v7(), "uuid")
+  }
+}
+
+pub fn json_uuid(raw: uuid.Uuid) -> json.Json {
+  raw |> uuid.to_string |> json.string
 }

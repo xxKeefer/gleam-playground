@@ -1,10 +1,9 @@
 import app/auth.{type Context}
+import app/routes/blog
 import app/routes/roll
 import app/routes/sudoku
 import app/routes/user
 import app/web
-
-// import gleam/io
 import wisp.{type Request, type Response}
 
 pub fn handle_request(req: Request, static_base_context: Context) -> Response {
@@ -13,6 +12,8 @@ pub fn handle_request(req: Request, static_base_context: Context) -> Response {
 
   case wisp.path_segments(req) {
     ["roll"] -> roll.handle_roll_dice(req)
+    ["blog"] -> blog.all(req, ctx)
+    ["blog", id] -> blog.one(req, ctx, id)
     ["user"] -> user.all(req, ctx)
     ["user", "login"] -> user.login(req, ctx)
     ["user", "logout"] -> user.logout(req)

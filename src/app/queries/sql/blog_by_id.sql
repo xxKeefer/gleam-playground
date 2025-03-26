@@ -1,2 +1,2 @@
-select id, email, password_hash from users
+select * from blog_articles
 where id = $1;
