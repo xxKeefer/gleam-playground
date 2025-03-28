@@ -71,18 +71,16 @@ pub fn blog_update(db, arg_1, arg_2, arg_3, arg_4, arg_5) {
     use updated_at <- decode.field(5, pog.timestamp_decoder())
     use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
     use content <- decode.field(7, decode.string)
-    decode.success(
-      BlogUpdateRow(
-        id:,
-        title:,
-        slug:,
-        author_id:,
-        created_at:,
-        updated_at:,
-        tags:,
-        content:,
-      ),
-    )
+    decode.success(BlogUpdateRow(
+      id:,
+      title:,
+      slug:,
+      author_id:,
+      created_at:,
+      updated_at:,
+      tags:,
+      content:,
+    ))
   }
 
   "update blog_articles
@@ -134,18 +132,16 @@ pub fn blog_list(db) {
     use updated_at <- decode.field(5, pog.timestamp_decoder())
     use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
     use content <- decode.field(7, decode.string)
-    decode.success(
-      BlogListRow(
-        id:,
-        title:,
-        slug:,
-        author_id:,
-        created_at:,
-        updated_at:,
-        tags:,
-        content:,
-      ),
-    )
+    decode.success(BlogListRow(
+      id:,
+      title:,
+      slug:,
+      author_id:,
+      created_at:,
+      updated_at:,
+      tags:,
+      content:,
+    ))
   }
 
   "select * from blog_articles;
@@ -259,18 +255,16 @@ pub fn blog_by_id(db, arg_1) {
     use updated_at <- decode.field(5, pog.timestamp_decoder())
     use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
     use content <- decode.field(7, decode.string)
-    decode.success(
-      BlogByIdRow(
-        id:,
-        title:,
-        slug:,
-        author_id:,
-        created_at:,
-        updated_at:,
-        tags:,
-        content:,
-      ),
-    )
+    decode.success(BlogByIdRow(
+      id:,
+      title:,
+      slug:,
+      author_id:,
+      created_at:,
+      updated_at:,
+      tags:,
+      content:,
+    ))
   }
 
   "select * from blog_articles
@@ -317,18 +311,16 @@ pub fn blog_create(db, arg_1, arg_2, arg_3, arg_4, arg_5) {
     use updated_at <- decode.field(5, pog.timestamp_decoder())
     use tags <- decode.field(6, decode.optional(decode.list(decode.string)))
     use content <- decode.field(7, decode.string)
-    decode.success(
-      BlogCreateRow(
-        id:,
-        title:,
-        slug:,
-        author_id:,
-        created_at:,
-        updated_at:,
-        tags:,
-        content:,
-      ),
-    )
+    decode.success(BlogCreateRow(
+      id:,
+      title:,
+      slug:,
+      author_id:,
+      created_at:,
+      updated_at:,
+      tags:,
+      content:,
+    ))
   }
 
   "insert into blog_articles (
