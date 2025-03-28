@@ -1,4 +1,4 @@
-import app/controllers/sudoku
+import app/routes/sudoku
 import gleam/list
 import gleeunit/should
 
