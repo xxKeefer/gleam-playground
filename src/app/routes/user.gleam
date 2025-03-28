@@ -1,10 +1,9 @@
-import antigone
 import app/auth.{type Context}
 import app/config.{config as app_config}
 import app/error.{type AppError}
 import app/queries/sql
+import argus
 import birl
-import gleam/bit_array
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/http.{Delete, Get, Post}
@@ -92,13 +91,16 @@ fn register_user(
   user: EmailCredentials,
   ctx: Context,
 ) -> Result(UserFrom, AppError) {
-  let bits = bit_array.from_string(user.password)
-  let hashed = antigone.hash(antigone.hasher(), bits)
-  case sql.user_create(ctx.db, user.email, hashed) {
-    Ok(pog.Returned(_, [created])) -> Ok(Created(created))
-    Error(pog.ConstraintViolated(_, "users_email_key", _)) ->
-      Error(error.Auth(error.UserAlreadyExists))
-    Error(err) -> Error(error.Database(err))
+  case argus.hash(argus.hasher(), user.password, argus.gen_salt()) {
+    Ok(hash) -> {
+      case sql.user_create(ctx.db, user.email, hash.encoded_hash) {
+        Ok(pog.Returned(_, [created])) -> Ok(Created(created))
+        Error(pog.ConstraintViolated(_, "users_email_key", _)) ->
+          Error(error.Auth(error.UserAlreadyExists))
+        Error(err) -> Error(error.Database(err))
+        _ -> Error(error.Unknown)
+      }
+    }
     _ -> Error(error.Unknown)
   }
 }
@@ -177,11 +179,9 @@ fn authenticate_user(
 ) -> Result(UserFrom, AppError) {
   case sql.user_by_email(ctx.db, auth.email) {
     Ok(pog.Returned(_, [user])) -> {
-      let bits = bit_array.from_string(auth.password)
-
-      case antigone.verify(bits, user.password_hash) {
-        False -> Error(error.Auth(error.RejectedPassword))
-        True -> Ok(LoggedIn(user))
+      case argus.verify(user.password_hash, auth.password) {
+        Ok(True) -> Ok(LoggedIn(user))
+        _ -> Error(error.Auth(error.RejectedPassword))
       }
     }
     Error(e) -> Error(error.Database(e))
