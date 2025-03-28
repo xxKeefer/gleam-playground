@@ -22,6 +22,12 @@ jobs:
       - name: Push image
         run: |
           IMAGE_ID=ghcr.io/xxkeefer/gleam-playground
-          TAG="$IMAGE_ID":$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          docker tag webapp "$TAG"
-          docker push "$TAG"
+          VERSION_TAG=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          
+          # Tag with both version and 'production'
+          docker tag webapp "$IMAGE_ID:$VERSION_TAG"
+          docker tag webapp "$IMAGE_ID:production"
+
+          # Push both tags
+          docker push "$IMAGE_ID:$VERSION_TAG"
+          docker push "$IMAGE_ID:production"
