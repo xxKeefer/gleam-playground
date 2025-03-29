@@ -11,5 +11,5 @@ RUN \
 COPY --from=build /app/build/erlang-shipment /app
 WORKDIR /app
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["run", "-m", "app"]
+CMD ["gleam","run", "-m", "app"]
 
